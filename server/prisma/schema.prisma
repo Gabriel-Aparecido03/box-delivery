@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  DELIVERYMAN
+  RECIPIENT
+}
+
+enum Status {
+  RETURNED
+  DELIVERED
+  PICK_UP
+  WAITING_FOR_DELIVERY
+}
+
+model User {
+  id              String         @unique @default(uuid())
+  name            String
+  documentNumber  String         @unique @map("document_number")
+  password        String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime?
+  latitude        Float
+  longitude       Float
+  role            Role           @default(RECIPIENT)
+  PackagesSent    Package[]      @relation("user-role-deliveryman")
+  PackageReceived Package[]      @relation("user-role-recipient")
+  Notification    Notification[]
+}
+
+model Package {
+  id            String    @unique @default(uuid())
+  latitude      Float
+  longitude     Float
+  deliverymanId String    @map("deliveryman_id")
+  recipientId   String    @map("recipient_id")
+  status        Status    @default(WAITING_FOR_DELIVERY)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime?
+
+  deliveryman User @relation(fields: [deliverymanId], references: [id], name: "user-role-deliveryman", onDelete: Cascade)
+  recipientID User @relation(fields: [recipientId], references: [id], name: "user-role-recipient", onDelete: Cascade)
+}
+
+model Notification {
+  id        String    @unique @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @map("updated_at")
+  title     String
+  content   String
+  user_id   String
+  readAt    DateTime? @map("read_at")
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
